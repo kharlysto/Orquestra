@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan { STARTER GROWTH ENTERPRISE }
+enum Role { OWNER SALES INVENTORY ANALYTICS CRM }
+enum ProductCategory { ELECTRONICS FOOD APPAREL BEAUTY HOME GENERAL }
+enum Currency { USD PHP EUR GBP JPY CNY }
+enum SaleStatus { SOLD RETURNED REFUNDED }
+enum MessageVisibility { GENERAL PRIVATE }
+enum AuthChallengePurpose { SIGNUP LOGIN }
+enum InvitationStatus { PENDING ACCEPTED }
+enum Channel { WHATSAPP WECHAT LINE MESSENGER VIBER TELEGRAM SMS GMAIL OUTLOOK }
+enum ConversationStatus { OPEN CLOSED }
+enum CrmDirection { INBOUND OUTBOUND }
+enum CrmMessageStatus { RECEIVED QUEUED SENT FAILED }
+enum IntegrationStatus { DISCONNECTED CONNECTED }
+
+model Workspace {
+  id            String         @id
+  name          String
+  plan          Plan
+  ownerId       String         @unique
+  createdAt     DateTime
+  owner         User           @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  users         User[]         @relation("WorkspaceUsers")
+  products      Product[]
+  sales         Sale[]
+  customers     Customer[]
+  archive       ArchiveEntry[]
+  invitations   Invitation[]
+  messages      Message[]
+  conversations Conversation[]
+  crmMessages   CrmMessage[]
+  integrations  Integration[]
+}
+
+model User {
+  id              String            @id
+  workspaceId     String
+  name            String
+  email           String            @unique
+  passwordHash    String
+  role            Role
+  createdAt       DateTime
+  emailVerified   Boolean           @default(false)
+  trustedIps      String[]
+  workspace       Workspace         @relation("WorkspaceUsers", fields: [workspaceId], references: [id], onDelete: Cascade)
+  ownedWorkspace  Workspace?        @relation("WorkspaceOwner")
+  sales           Sale[]            @relation("RecordedSales")
+  sentMessages    Message[]         @relation("MessageSender")
+  authChallenges  AuthChallenge[]
+  deletedRecords  ArchiveEntry[]    @relation("ArchiveDeleter")
+}
+
+model Product {
+  id            String          @id
+  workspaceId   String
+  name          String
+  category      ProductCategory
+  details       Json
+  sku           String
+  price         Float
+  currency      Currency        @default(USD)
+  stock         Int
+  reorderLevel  Int
+  createdAt     DateTime
+  updatedAt     DateTime
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+  @@unique([workspaceId, sku])
+  @@index([workspaceId, category])
+}
+
+model Sale {
+  id           String     @id
+  workspaceId  String
+  productId    String
+  productName  String
+  productSku   String?
+  quantity     Int
+  total        Float
+  currency     Currency   @default(USD)
+  customerId   String?
+  customerName String
+  status       SaleStatus @default(SOLD)
+  note         String?
+  recordedBy   String
+  createdAt    DateTime
+  updatedAt    DateTime?
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id])
+  customer     Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  recorder     User       @relation("RecordedSales", fields: [recordedBy], references: [id])
+  @@index([workspaceId, createdAt])
+}
+
+model Customer {
+  id             String    @id
+  workspaceId    String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  source         String
+  conversationId String?
+  createdAt      DateTime
+  updatedAt      DateTime
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sales          Sale[]
+  @@index([workspaceId, name])
+}
+
+model ArchiveEntry {
+  id         String    @id
+  workspaceId String
+  entity     String
+  action     String
+  recordId   String
+  record     Json
+  deletedBy  String
+  deletedAt  DateTime
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deleter    User      @relation("ArchiveDeleter", fields: [deletedBy], references: [id])
+}
+
+model Invitation {
+  id              String           @id
+  workspaceId     String
+  email           String
+  name            String
+  role            Role
+  code            String           @unique
+  temporaryPassword String
+  status          InvitationStatus @default(PENDING)
+  createdAt       DateTime
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, email])
+}
+
+model Message {
+  id           String            @id
+  workspaceId  String
+  senderId     String
+  senderName   String
+  body         String
+  mentionUserId String?
+  attachment   Json?
+  visibility   MessageVisibility @default(GENERAL)
+  recipientId  String?
+  replyToId    String?
+  reactions    Json?
+  createdAt    DateTime
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sender       User              @relation("MessageSender", fields: [senderId], references: [id])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, visibility])
+}
+
+model Conversation {
+  id             String             @id
+  workspaceId    String
+  channel        Channel
+  externalId     String
+  customerName   String
+  customerAddress String
+  subject        String?
+  status         ConversationStatus @default(OPEN)
+  assignedTo     String?
+  lastMessageAt  DateTime
+  createdAt      DateTime
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmMessages    CrmMessage[]
+  @@unique([workspaceId, channel, externalId])
+  @@index([workspaceId, lastMessageAt])
+}
+
+model CrmMessage {
+  id            String            @id
+  workspaceId   String
+  conversationId String
+  channel       Channel
+  direction     CrmDirection
+  externalId    String?
+  senderName    String
+  senderAddress String
+  body          String
+  status        CrmMessageStatus
+  createdAt     DateTime
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, conversationId, createdAt])
+  @@unique([channel, externalId])
+}
+
+model Integration {
+  id             String            @id
+  workspaceId    String
+  channel        Channel
+  label          String
+  status         IntegrationStatus
+  accountAddress String?
+  createdAt      DateTime
+  workspace      Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@unique([workspaceId, channel])
+}
+
+model AuthChallenge {
+  id         String               @id
+  userId     String
+  email      String
+  purpose    AuthChallengePurpose
+  ip         String
+  codeHash   String
+  expiresAt  DateTime
+  createdAt  DateTime
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([email, purpose, createdAt])
+}
