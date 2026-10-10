@@ -1,0 +1,21 @@
+export type Plan = "STARTER" | "GROWTH" | "ENTERPRISE";
+export type Role = "OWNER" | "SALES" | "INVENTORY" | "ANALYTICS" | "CRM";
+
+export type User = { id: string; workspaceId: string; name: string; email: string; passwordHash: string; role: Role; createdAt: string; emailVerified?: boolean; trustedIps?: string[] };
+export type AuthChallenge = { id: string; userId: string; email: string; purpose: "SIGNUP" | "LOGIN"; ip: string; codeHash: string; expiresAt: string; createdAt: string };
+export type Workspace = { id: string; name: string; plan: Plan; ownerId: string; createdAt: string };
+export type ProductCategory = "ELECTRONICS" | "FOOD" | "APPAREL" | "BEAUTY" | "HOME" | "GENERAL";
+export type Currency = "USD" | "PHP" | "EUR" | "GBP" | "JPY" | "CNY";
+export type Product = { id: string; workspaceId: string; name: string; category: ProductCategory; details: Record<string, string>; sku: string; price: number; currency?: Currency; stock: number; reorderLevel: number; createdAt: string; updatedAt: string };
+export type SaleStatus = "SOLD" | "RETURNED" | "REFUNDED";
+export type Sale = { id: string; workspaceId: string; productId: string; productName: string; productSku?: string; quantity: number; total: number; currency?: Currency; customerId?: string; customerName: string; status: SaleStatus; note?: string; recordedBy: string; createdAt: string; updatedAt?: string };
+export type ArchiveEntry = { id: string; workspaceId: string; entity: "SALE"; action: "DELETE"; recordId: string; record: unknown; deletedBy: string; deletedAt: string };
+export type Invitation = { id: string; workspaceId: string; email: string; name: string; role: Exclude<Role, "OWNER">; code: string; temporaryPassword: string; status: "PENDING" | "ACCEPTED"; createdAt: string };
+export type MessageAttachment = { name: string; size: number; type: string; dataUrl: string };
+export type Message = { id: string; workspaceId: string; senderId: string; senderName: string; body: string; mentionUserId?: string; attachment?: MessageAttachment; visibility?: "GENERAL" | "PRIVATE"; recipientId?: string; replyToId?: string; reactions?: Record<string, string>; createdAt: string };
+export type Channel = "WHATSAPP" | "WECHAT" | "LINE" | "MESSENGER" | "VIBER" | "TELEGRAM" | "SMS" | "GMAIL" | "OUTLOOK";
+export type Conversation = { id: string; workspaceId: string; channel: Channel; externalId: string; customerName: string; customerAddress: string; subject?: string; status: "OPEN" | "CLOSED"; assignedTo?: string; lastMessageAt: string; createdAt: string };
+export type Customer = { id: string; workspaceId: string; name: string; email?: string; phone?: string; address?: string; source: "MANUAL" | "CRM"; conversationId?: string; createdAt: string; updatedAt: string };
+export type CrmMessage = { id: string; workspaceId: string; conversationId: string; channel: Channel; direction: "INBOUND" | "OUTBOUND"; externalId?: string; senderName: string; senderAddress: string; body: string; status: "RECEIVED" | "QUEUED" | "SENT" | "FAILED"; createdAt: string };
+export type Integration = { id: string; workspaceId: string; channel: Channel; label: string; status: "DISCONNECTED" | "CONNECTED"; accountAddress?: string; createdAt: string };
+export type Database = { users: User[]; workspaces: Workspace[]; products: Product[]; sales: Sale[]; customers: Customer[]; archive: ArchiveEntry[]; invitations: Invitation[]; messages: Message[]; conversations: Conversation[]; crmMessages: CrmMessage[]; integrations: Integration[]; authChallenges: AuthChallenge[] };

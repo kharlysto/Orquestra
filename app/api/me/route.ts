@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server"; import { currentUser } from "@/lib/auth"; import { readDb } from "@/lib/db";
+export async function GET() { const user = await currentUser(); if (!user) return NextResponse.json({ user: null }, { status: 401 }); const db = await readDb(); const workspace = db.workspaces.find((w) => w.id === user.workspaceId)!; return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role }, workspace: { name: workspace.name, plan: workspace.plan } }); }
