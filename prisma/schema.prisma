@@ -4,22 +4,82 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-enum Plan { STARTER GROWTH ENTERPRISE }
-enum Role { OWNER SALES INVENTORY ANALYTICS CRM }
-enum ProductCategory { ELECTRONICS FOOD APPAREL BEAUTY HOME GENERAL }
-enum Currency { USD PHP EUR GBP JPY CNY }
-enum SaleStatus { SOLD RETURNED REFUNDED }
-enum MessageVisibility { GENERAL PRIVATE }
-enum AuthChallengePurpose { SIGNUP LOGIN }
-enum InvitationStatus { PENDING ACCEPTED }
-enum Channel { WHATSAPP WECHAT LINE MESSENGER VIBER TELEGRAM SMS GMAIL OUTLOOK }
-enum ConversationStatus { OPEN CLOSED }
-enum CrmDirection { INBOUND OUTBOUND }
-enum CrmMessageStatus { RECEIVED QUEUED SENT FAILED }
-enum IntegrationStatus { DISCONNECTED CONNECTED }
+enum Plan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+enum Role {
+  OWNER
+  SALES
+  INVENTORY
+  ANALYTICS
+  CRM
+}
+enum ProductCategory {
+  ELECTRONICS
+  FOOD
+  APPAREL
+  BEAUTY
+  HOME
+  GENERAL
+}
+enum Currency {
+  USD
+  PHP
+  EUR
+  GBP
+  JPY
+  CNY
+}
+enum SaleStatus {
+  SOLD
+  RETURNED
+  REFUNDED
+}
+enum MessageVisibility {
+  GENERAL
+  PRIVATE
+}
+enum AuthChallengePurpose {
+  SIGNUP
+  LOGIN
+}
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+}
+enum Channel {
+  WHATSAPP
+  WECHAT
+  LINE
+  MESSENGER
+  VIBER
+  TELEGRAM
+  SMS
+  GMAIL
+  OUTLOOK
+}
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+enum CrmDirection {
+  INBOUND
+  OUTBOUND
+}
+enum CrmMessageStatus {
+  RECEIVED
+  QUEUED
+  SENT
+  FAILED
+}
+enum IntegrationStatus {
+  DISCONNECTED
+  CONNECTED
+}
 
 model Workspace {
   id            String         @id
@@ -27,7 +87,6 @@ model Workspace {
   plan          Plan
   ownerId       String         @unique
   createdAt     DateTime
-  owner         User           @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   users         User[]         @relation("WorkspaceUsers")
   products      Product[]
   sales         Sale[]
@@ -51,7 +110,6 @@ model User {
   emailVerified   Boolean           @default(false)
   trustedIps      String[]
   workspace       Workspace         @relation("WorkspaceUsers", fields: [workspaceId], references: [id], onDelete: Cascade)
-  ownedWorkspace  Workspace?        @relation("WorkspaceOwner")
   sales           Sale[]            @relation("RecordedSales")
   sentMessages    Message[]         @relation("MessageSender")
   authChallenges  AuthChallenge[]
@@ -72,7 +130,6 @@ model Product {
   createdAt     DateTime
   updatedAt     DateTime
   workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sales         Sale[]
   @@unique([workspaceId, sku])
   @@index([workspaceId, category])
 }
@@ -94,7 +151,6 @@ model Sale {
   createdAt    DateTime
   updatedAt    DateTime?
   workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  product      Product    @relation(fields: [productId], references: [id])
   customer     Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
   recorder     User       @relation("RecordedSales", fields: [recordedBy], references: [id])
   @@index([workspaceId, createdAt])
@@ -195,7 +251,7 @@ model CrmMessage {
   workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   @@index([workspaceId, conversationId, createdAt])
-  @@unique([channel, externalId])
+  @@unique([workspaceId, channel, externalId])
 }
 
 model Integration {

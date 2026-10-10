@@ -11,7 +11,7 @@ npm run dev
 
 Open `http://localhost:3000`, create a workspace at `/signup`, and use `/dashboard`.
 
-The current local development store is `data/orquestra.json` and is intentionally gitignored. It can be replaced by Prisma/Postgres or another production database without changing the API contract.
+The application now stores records in PostgreSQL through Prisma. The former `data/orquestra.json` file is retained locally as an ignored backup.
 
 ## Implemented foundation
 
@@ -28,10 +28,10 @@ API routes live under `app/api`. External Gmail, Teams, Zoom, and other messagin
 
 ## Next production layer
 
-Before deployment, replace the local JSON store with a transactional database, move secrets to environment variables, add email delivery for invitations, add audit logs and rate limiting, and connect billing/webhooks to make plan selection authoritative.
+Before deployment, move high-concurrency mutations to direct row-level transactions, add audit logs and rate limiting, and connect billing/webhooks to make plan selection authoritative.
 
 
-The Prisma schema is drafted, but the runtime still uses `data/orquestra.json`. PostgreSQL migration is pending.
+The initial PostgreSQL migration is applied locally, existing JSON records were verified after import, and runtime data access now uses Prisma.
 
 
 
